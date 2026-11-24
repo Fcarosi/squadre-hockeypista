@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="it"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Squadre da invitare</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+:root{--ink:#0d1b2a;--blue:#3d86d6;--blue2:#1f4f86;--mut:#5b6f86;--line:#dfe6ee;--bg:#f3f6fa;--sel:#fff5d6;--red:#c0392b}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:var(--ink);background:var(--bg);font-size:14px}
+header{background:var(--ink);color:#fff;padding:12px 18px;display:flex;flex-wrap:wrap;gap:14px;align-items:center}
+header h1{font-size:18px;margin:0 12px 0 0;font-weight:700}
+header label{font-size:13px;color:#b9c7d6;display:flex;align-items:center;gap:6px}
+header select,header input{font:inherit;padding:5px 8px;border-radius:5px;border:0}
+.sum{margin-left:auto;background:#fff;color:var(--ink);border-radius:6px;padding:6px 12px;font-weight:700}
+.sum span{color:var(--blue2)}
+html,body{height:100%}
+body{display:flex;flex-direction:column;overflow:hidden}
+.split{flex:1;display:flex;min-height:0}
+#map{flex:0 0 40%;height:100%}
+@media (max-width:900px){body{overflow:auto;display:block}.split{display:block}#map{height:60vh}#gut{display:none}main{display:block}.scroll{overflow:visible}}
+.mk{display:flex;flex-direction:column;align-items:center;transform:translate(-50%,-100%);width:max-content;cursor:pointer}
+.mk .logos{display:flex;gap:2px;background:#fff;border:2px solid var(--blue);border-radius:8px;padding:2px;box-shadow:0 1px 4px rgba(0,0,0,.3)}
+.mk.org .logos{border-color:var(--red);border-width:3px}
+.mk.chk .logos{background:var(--sel);border-color:#d4a200}
+.mk img{width:26px;height:26px;object-fit:contain}
+.mk .lab{margin-top:2px;background:rgba(13,27,42,.88);color:#fff;font-size:11px;line-height:1.25;padding:2px 6px;border-radius:4px;text-align:center;white-space:nowrap}
+.mk .lab b{display:block;font-size:11.5px}
+.mk.org .lab{background:var(--red)}
+.mk.far{opacity:.35}
+.mk.cmp img{width:20px;height:20px}.mk.cmp .lab{font-size:10px;padding:1px 4px}
+main{flex:1;display:flex;flex-direction:column;min-width:0}
+main .bar{padding:10px 18px;margin:0;border-bottom:1px solid var(--line);background:var(--bg)}
+.scroll{flex:1;overflow:auto;padding:0 18px 30px}
+#gut{flex:0 0 7px;cursor:col-resize;background:var(--line);position:relative}
+#gut:hover,#gut.drag{background:var(--blue)}
+#gut::after{content:'';position:absolute;left:2px;top:50%;width:3px;height:36px;margin-top:-18px;border-left:1px solid #fff;border-right:1px solid #fff}
+footer h3{margin-top:14px}
+footer dl{display:grid;grid-template-columns:max-content 1fr;gap:2px 10px;margin:0}
+footer dt{font-weight:700;color:var(--ink)}footer dd{margin:0}
+th[data-s=km],th[data-s=min],th[data-s=n],th[data-s=pos],th[data-s=pg],th[data-s=gf],th[data-s=gs],th[data-s=dif]{text-align:right}
+th{position:relative}
+.rz{position:absolute;top:0;right:0;width:7px;height:100%;cursor:col-resize;z-index:3}
+.rz:hover,.rz.on{background:var(--blue)}
+table.fixed{table-layout:fixed}
+table.fixed td{overflow:hidden;text-overflow:ellipsis;word-break:break-word}
+thead th{position:sticky;top:0;z-index:2;box-shadow:0 1px 0 var(--line)}
+.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:10px}
+.bar button{font:inherit;padding:6px 12px;border:1px solid var(--line);background:#fff;border-radius:6px;cursor:pointer}
+.bar .hint{color:var(--mut);font-size:13px}
+table{width:100%;border-collapse:separate;border-spacing:0;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+th{background:#e8eef5;text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.4px;padding:8px;color:var(--blue2);cursor:pointer;white-space:nowrap}
+td{padding:7px 8px;border-top:1px solid var(--line);vertical-align:middle}
+tr.city td{background:#f7f9fc;font-weight:700}
+tr.chk td{background:var(--sel)}
+tr.org td{color:var(--red)}
+td.n{text-align:right;white-space:nowrap}
+td.club{display:flex;align-items:center;gap:8px;min-width:230px}
+td.n{font-variant-numeric:tabular-nums}
+td.club img{width:28px;height:28px;object-fit:contain}
+td.club small{display:block;color:var(--mut);font-weight:400;font-size:12px}
+.tm{font-size:12px;color:var(--mut)}
+.badge{display:inline-block;background:var(--blue);color:#fff;border-radius:10px;padding:1px 8px;font-weight:700}
+a{color:var(--blue2)}
+input[type=checkbox]{width:18px;height:18px;cursor:pointer}
+footer{color:var(--mut);font-size:12px;line-height:1.5;margin-top:18px}
+footer h3{font-size:13px;color:var(--ink);margin:0 0 4px}
+</style></head>
+<body>
+<header>
+ <h1>Squadre da invitare</h1><span id="upd" style="font-size:12px;color:#b9c7d6">Dati FISR aggiornati il __UPDATED__</span>
+ <label>Categoria <select id="cat"></select></label>
+ <label>Città di partenza <select id="org"></select></label>
+ <label>Distanza massima <input id="max" type="range" min="50" max="1000" step="25" value="1000"> <span id="maxv"></span></label>
+ <div class="sum">Selezionate: <span id="nsq">0</span> squadre da <span id="ncl">0</span> club</div>
+</header>
+<div class="split">
+<div id="map"></div>
+<div id="gut" title="Trascina per ridimensionare"></div>
+<main>
+ <div class="bar">
+  <button id="copy">Copia email dei selezionati</button>
+  <button id="csv">Scarica CSV dei selezionati</button>
+  <button id="clr">Togli tutte le spunte</button>
+ </div>
+ <div class="scroll">
+ <table><thead><tr><th></th><th data-s="citta">Città</th><th data-s="club">Club</th><th data-s="km" title="Km su strada">Km</th><th data-s="min" title="Tempo di viaggio in auto">Viaggio</th><th data-s="n" title="Squadre disponibili nella categoria">Sq</th><th data-s="pos" title="Posizione in classifica nel girone">Pos</th><th data-s="pg" title="Partite giocate">P</th><th data-s="gf" title="Gol fatti">GF</th><th data-s="gs" title="Gol subiti">GS</th><th data-s="dif" title="Media a partita: gol fatti – gol subiti">MP</th><th>Telefono</th><th>Email</th></tr></thead><tbody id="tb"></tbody></table>
+ <footer><div id="leg"></div><div id="src"></div></footer>
+ </div>
+</main>
+</div>
+<script>
+const CLUBS=__CLUBS__;
+const DIST=__DIST__;
+const CATS=['U11','U13','U15','U17','U19'];
+const LOGO='https://sidgad.cloud/fisr/images/logos_clubes/';
+const KEY='squadre_invitare_v1';
+let st={cat:'U13',org:'Siena',max:1000,sel:{},sort:'km'};
+try{Object.assign(st,JSON.parse(localStorage.getItem(KEY)||'{}'));}catch(e){}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(st));}catch(e){}};
+const idx=n=>DIST.names.indexOf(n);
+const hm=m=>m==null?'':Math.floor(m/60)+' h '+String(m%60).padStart(2,'0');
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function teamsOf(c){if(st.cat==='ALL')return Object.values(c.teams).flat();return c.teams[st.cat]||[];}
+function catLabel(c){if(st.cat!=='ALL')return '';return CATS.filter(k=>c.teams[k]).map(k=>k+': '+c.teams[k].length).join(' · ');}
+function km(c){const i=idx(st.org),j=idx(c.citta);return DIST.d[i][j];}
+function mins(c){const i=idx(st.org),j=idx(c.citta);return DIST.t[i][j];}
+const catSel=document.getElementById('cat'),orgSel=document.getElementById('org'),maxIn=document.getElementById('max');
+catSel.innerHTML=CATS.map(c=>`<option value="${c}">Under ${c.slice(1)} (${CLUBS.reduce((a,x)=>a+(x.teams[c]||[]).length,0)} squadre)</option>`).join('')+'<option value="ALL">Tutte le categorie</option>';
+orgSel.innerHTML=DIST.names.map(n=>`<option>${n}</option>`).join('');
+catSel.value=st.cat;orgSel.value=st.org;maxIn.value=st.max;
+catSel.onchange=()=>{st.cat=catSel.value;save();draw();};
+orgSel.onchange=()=>{st.org=orgSel.value;save();draw();fit();};
+maxIn.oninput=()=>{st.max=+maxIn.value;save();draw();};
+document.querySelectorAll('th[data-s]').forEach(th=>th.onclick=e=>{if(e.target.closest('.rz')||colDrag)return;st.sort=th.dataset.s;save();drawTable();});
+
+const map=L.map('map',{zoomSnap:.25}).setView([43.5,11.5],6);
+L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',{maxZoom:16,attribution:'Mappa &copy; Esri, HERE, Garmin, OpenStreetMap'}).addTo(map);
+L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}',{maxZoom:16}).addTo(map);
+let layer=L.layerGroup().addTo(map);map.on('zoomend',()=>drawMap());
+function fit(){const vis=towns().filter(t=>km(t.clubs[0])<=st.max||t.name===st.org);const pts=vis.map(t=>DIST.geo[idx(t.name)]);if(pts.length>1)map.fitBounds(pts,{padding:[60,60]});}
+function towns(){const m={};CLUBS.forEach(c=>{if(!teamsOf(c).length)return;(m[c.citta]=m[c.citta]||{name:c.citta,clubs:[]}).clubs.push(c);});return Object.values(m);}
+function drawMap(){layer.clearLayers();const T=towns();if(!T.find(t=>t.name===st.org))T.push({name:st.org,clubs:[]});
+ T.forEach(t=>{const g=DIST.geo[idx(t.name)];const isOrg=t.name===st.org;const k=DIST.d[idx(st.org)][idx(t.name)],mi=DIST.t[idx(st.org)][idx(t.name)];
+  const nT=t.clubs.reduce((a,c)=>a+teamsOf(c).length,0);const chk=t.clubs.some(c=>TEAMS.some(x=>x.c===c&&st.sel[x.key]));const far=!isOrg&&k>st.max;
+  const logos=t.clubs.map(c=>`<img src="${LOGO+c.logo}" title="${esc(c.short)}" onerror="this.style.display='none'">`).join('')||'<span style="padding:4px 6px;font-weight:700">●</span>';
+  const compact=map.getZoom()<8;const lab=isOrg?`<b>${esc(t.name)}</b>${compact?'':'partenza'}`:(compact?`${Math.round(k)} km`:`<b>${esc(t.name)}</b>${k} km · ${hm(mi)}${nT?` · ${nT} sq.`:''}`);
+  const html=`<div title="${esc(t.name)}: ${isOrg?'partenza':k+' km, '+hm(mi)}" class="mk ${compact?'cmp':''} ${isOrg?'org':''} ${chk?'chk':''} ${far?'far':''}"><div class="logos">${logos}</div><div class="lab">${lab}</div></div>`;
+  const m=L.marker(g,{icon:L.divIcon({className:'',html,iconSize:null}),zIndexOffset:isOrg?1000:(chk?500:0)}).addTo(layer);
+  m.on('click',()=>{st.org=t.name;orgSel.value=t.name;save();draw();});});}
+const TEAMS=[];CLUBS.forEach(c=>CATS.forEach(cat=>(c.teams[cat]||[]).forEach(name=>{const stt=((c.stats||{})[cat]||[]).find(x=>x.t===name.trim())||null;TEAMS.push({key:cat+'|'+name.trim(),cat,name:name.trim(),c,stt,nClub:(c.teams[cat]||[]).length});})));
+Object.keys(st.sel).forEach(k=>{if(!k.includes('|'))delete st.sel[k];});
+const f1=x=>x==null?'':x.toFixed(1).replace('.',',');
+function teamLabel(t){const base=t.c.short;let n=t.name.replace(/\s+/g,' ');return n;}
+function rows(){return TEAMS.filter(t=>st.cat==='ALL'||t.cat===st.cat).map(t=>{const x=t.stt;return {t,c:t.c,citta:t.c.citta,club:t.name,km:km(t.c),min:mins(t.c),n:t.nClub,pos:x?x.pos/x.nz:null,pg:x?x.pg:null,gf:x&&x.pg?x.gf/x.pg:null,gs:x&&x.pg?x.gs/x.pg:null,dif:x&&x.pg?(x.gf-x.gs)/x.pg:null};}).filter(r=>r.km<=st.max||r.citta===st.org);}
+function statCells(t){const x=t.stt;if(!x)return '<td colspan="5" class="tm">nessuna classifica pubblicata</td>';
+ return `<td class="n">${x.pos}° di ${x.nz} <span class="tm">${esc(x.z)}</span></td><td class="n">${x.pg}</td><td class="n">${x.gf}</td><td class="n">${x.gs}</td><td class="n">${x.pg?f1(x.gf/x.pg)+' – '+f1(x.gs/x.pg):'—'}</td>`;}
+function drawTable(){const R=rows();const s=st.sort;const nz=v=>v==null?Infinity:v;const desc={n:1,gf:1,dif:1,pg:1};R.sort((a,b)=>s==='citta'||s==='club'?String(a[s]).localeCompare(b[s])||a.km-b.km:(desc[s]?(nz(-b[s])-nz(-a[s])):(nz(a[s])-nz(b[s])))||a.km-b.km||a.club.localeCompare(b.club));
+ let h='';R.forEach(r=>{const t=r.t,c=r.c,on=!!st.sel[t.key],org=c.citta===st.org;
+  h+=`<tr class="${on?'chk':''} ${org?'org':''}"><td><input type="checkbox" data-k="${esc(t.key)}" ${on?'checked':''}></td>
+  <td><b>${esc(c.citta)}</b> <span class="tm">(${c.prov})</span></td>
+  <td class="club" title="${esc(c.nome)}"><img src="${LOGO+c.logo}" onerror="this.style.visibility='hidden'"><div><b>${esc(t.name)}</b><small>${st.cat==='ALL'?'<b>'+t.cat+'</b> · ':''}${esc(c.short)}</small></div></td>
+  <td class="n">${org?'—':r.km}</td><td class="n">${org?'—':hm(r.min)}</td><td class="n"><span class="badge" title="Squadre del club nella categoria">${r.n}</span></td>${statCells(t)}
+  <td>${c.tel.split(' / ').map(x=>`<a href="tel:${x}">${x}</a>`).join('<br>')}</td>
+  <td>${c.mail?`<a href="mailto:${c.mail}">${esc(c.mail)}</a>`:''}${c.web?`<br><a class="tm" href="${c.web}" target="_blank">sito</a>`:''}</td></tr>`;});
+ document.getElementById('tb').innerHTML=h||'<tr><td colspan="13">Nessuna squadra entro la distanza scelta.</td></tr>';
+ document.querySelectorAll('th[data-s]').forEach(th=>th.style.textDecoration=th.dataset.s===s?'underline':'');
+ const sel=selected();document.getElementById('nsq').textContent=sel.length;document.getElementById('ncl').textContent=new Set(sel.map(t=>t.c.cod)).size;
+ document.getElementById('maxv').textContent=st.max>=1000?'nessun limite':st.max+' km';}
+document.getElementById('tb').addEventListener('change',e=>{const cb=e.target.closest('input[data-k]');if(!cb)return;if(cb.checked)st.sel[cb.dataset.k]=1;else delete st.sel[cb.dataset.k];save();draw();});
+function selected(){return TEAMS.filter(t=>st.sel[t.key]);}
+document.getElementById('copy').onclick=async()=>{const m=[...new Set(selected().map(t=>t.c.mail).filter(Boolean))];const txt=m.join('; ');try{await navigator.clipboard.writeText(txt);alert('Copiate '+m.length+' email');}catch(e){prompt('Copia le email:',txt);}};
+document.getElementById('csv').onclick=()=>{const head=['Categoria','Squadra','Città','Prov','Club','Società FISR','Km da '+st.org,'Viaggio','Classifica','Partite','Gol fatti','Gol subiti','Telefono','Email','Indirizzo sede'];
+ const lines=[head].concat(selected().map(t=>{const c=t.c,x=t.stt;return [t.cat,t.name,c.citta,c.prov,c.short,c.nome,km(c),hm(mins(c)),x?x.pos+'° di '+x.nz+' '+x.z:'',x?x.pg:'',x?x.gf:'',x?x.gs:'',c.tel,c.mail,c.ind];}));
+ const csv=lines.map(l=>l.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(';')).join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['﻿'+csv],{type:'text/csv'}));a.download='squadre_selezionate.csv';a.click();};
+document.getElementById('clr').onclick=()=>{st.sel={};save();draw();};
+function draw(){drawMap();drawTable();}
+document.getElementById('leg').innerHTML=`<h3>Legenda</h3><dl>
+<dt>Km</dt><dd>chilometri su strada dalla città di partenza</dd>
+<dt>Viaggio</dt><dd>tempo in auto senza traffico né soste</dd>
+<dt>Sq</dt><dd>quante squadre ha in tutto il club nella categoria (A, B, femminile); ogni squadra ha la sua riga</dd>
+<dt>Pos</dt><dd>posizione nel girone della categoria, con il numero di squadre del girone e la zona</dd>
+<dt>P</dt><dd>partite giocate</dd><dt>GF</dt><dd>gol fatti</dd><dt>GS</dt><dd>gol subiti</dd>
+<dt>MP</dt><dd>media a partita: gol fatti – gol subiti</dd></dl>
+<h3>Come si usa</h3>Clicca una città sulla mappa per calcolare le distanze da lì; avvicinando la mappa compaiono nomi e tempi di viaggio. Trascina la barra tra mappa e lista per cambiare le proporzioni. Trascina il bordo destro del titolo di una colonna per cambiarne la larghezza; doppio clic sul bordo per tornare alle larghezze iniziali. Clicca il titolo di una colonna per ordinare. Spunta le squadre da invitare: la selezione resta salvata in questo browser.`;
+document.getElementById('src').innerHTML=`<h3>Fonti</h3>
+Squadre per categoria, stagione 2026/27, e loghi: <a href="https://www.hockeypista.fisr.it/" target="_blank">FISR Hockey Pista</a>, campionati giovanili U11–U19, consultato il __UPDATED__.<br>
+Classifica, partite, gol fatti e subiti: stessa fonte, sezione Classifiche di ogni campionato, aggiornate al __UPDATED__. I gironi sono a zone e a livelli diversi, e le squadre hanno giocato un numero diverso di partite: per confrontarle conviene la media a partita (gol fatti – gol subiti). Il campionato è appena iniziato e con 1–3 partite la media dice poco. I dati vengono riscaricati in automatico ogni notte.<br>
+Telefono, email e sede: <a href="https://www.fisr.it/la-federazione/ricerca-societa-sportive.html" target="_blank">FISR, ricerca società sportive</a>, consultato il __UPDATED__. Il club è collegato alla scheda tramite il codice società FISR. Telefono ed email sono quelli della sede registrata e possono non essere il referente del settore giovanile.<br>
+Coordinate dei comuni: <a href="https://nominatim.openstreetmap.org/" target="_blank">Nominatim / OpenStreetMap</a>, consultato il __DISTDATE__.<br>
+Km e tempi: <a href="https://project-osrm.org/" target="_blank">OSRM</a> su rete stradale OpenStreetMap, percorso in auto da centro comune a centro comune, senza traffico né soste, calcolato il __DISTDATE__. Con un pulmino e le soste i tempi reali sono più lunghi.<br>
+Il numero di squadre disponibili corrisponde alle squadre iscritte al campionato della categoria (squadre A, B, femminili). Non indica quante il club può portare a un torneo.`;
+let colDrag=false;
+(function(){const tbl=document.querySelector('table');const ths=[...tbl.querySelectorAll('thead th')];
+ function fix(){const w=st.colw&&st.colw.length===ths.length?st.colw:ths.map(th=>th.getBoundingClientRect().width);ths.forEach((th,i)=>th.style.width=w[i]+'px');tbl.style.width=w.reduce((a,b)=>a+b,0)+'px';tbl.classList.add('fixed');}
+ function reset(){st.colw=null;save();tbl.classList.remove('fixed');tbl.style.width='';ths.forEach(th=>th.style.width='');requestAnimationFrame(fix);}
+ ths.forEach((th,i)=>{const h=document.createElement('span');h.className='rz';h.title='Trascina per cambiare la larghezza · doppio clic per ripristinare tutte le colonne';th.appendChild(h);
+  let x0,w0;h.addEventListener('pointerdown',e=>{e.stopPropagation();e.preventDefault();colDrag=true;h.classList.add('on');h.setPointerCapture(e.pointerId);x0=e.clientX;w0=th.getBoundingClientRect().width;});
+  h.addEventListener('pointermove',e=>{if(!h.classList.contains('on'))return;const w=Math.max(28,w0+e.clientX-x0);th.style.width=w+'px';tbl.style.width=ths.reduce((a,t)=>a+parseFloat(t.style.width),0)+'px';});
+  h.addEventListener('pointerup',()=>{h.classList.remove('on');st.colw=ths.map(t=>parseFloat(t.style.width));save();setTimeout(()=>colDrag=false,0);});
+  h.addEventListener('dblclick',e=>{e.stopPropagation();reset();});});
+ requestAnimationFrame(fix);})();
+(function(){const g=document.getElementById('gut'),m=document.getElementById('map');let w=st.mapw||40;m.style.flexBasis=w+'%';let on=false;
+g.addEventListener('pointerdown',e=>{on=true;g.classList.add('drag');g.setPointerCapture(e.pointerId);});
+g.addEventListener('pointermove',e=>{if(!on)return;const W=document.querySelector('.split').getBoundingClientRect();w=Math.min(80,Math.max(15,(e.clientX-W.left)/W.width*100));m.style.flexBasis=w+'%';map.invalidateSize();});
+g.addEventListener('pointerup',()=>{on=false;g.classList.remove('drag');st.mapw=Math.round(w);save();map.invalidateSize();});})();
+draw();setTimeout(()=>{map.invalidateSize();fit();},50);window.addEventListener('resize',()=>map.invalidateSize());
+</script></body></html>
