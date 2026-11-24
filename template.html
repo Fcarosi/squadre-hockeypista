@@ -44,6 +44,7 @@ th{position:relative}
 .rz:hover,.rz.on{background:var(--blue)}
 table.fixed{table-layout:fixed}
 table.fixed td{overflow:hidden;text-overflow:ellipsis;word-break:break-word}
+th[data-arrow]::after{content:attr(data-arrow);font-size:10px}
 thead th{position:sticky;top:0;z-index:2;box-shadow:0 1px 0 var(--line)}
 .bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:10px}
 .bar button{font:inherit;padding:6px 12px;border:1px solid var(--line);background:#fff;border-radius:6px;cursor:pointer}
@@ -112,7 +113,7 @@ catSel.value=st.cat;orgSel.value=st.org;maxIn.value=st.max;
 catSel.onchange=()=>{st.cat=catSel.value;save();draw();};
 orgSel.onchange=()=>{st.org=orgSel.value;save();draw();fit();};
 maxIn.oninput=()=>{st.max=+maxIn.value;save();draw();};
-document.querySelectorAll('th[data-s]').forEach(th=>th.onclick=e=>{if(e.target.closest('.rz')||colDrag)return;st.sort=th.dataset.s;save();drawTable();});
+document.querySelectorAll('th[data-s]').forEach(th=>th.onclick=e=>{if(e.target.closest('.rz')||colDrag)return;const k=th.dataset.s;if(st.sort===k)st.dir=-(st.dir||1);else{st.sort=k;st.dir=DESC[k]?-1:1;}save();drawTable();});
 
 const map=L.map('map',{zoomSnap:.25}).setView([43.5,11.5],6);
 L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',{maxZoom:16,attribution:'Mappa &copy; Esri, HERE, Garmin, OpenStreetMap'}).addTo(map);
@@ -132,10 +133,11 @@ const TEAMS=[];CLUBS.forEach(c=>CATS.forEach(cat=>(c.teams[cat]||[]).forEach(nam
 Object.keys(st.sel).forEach(k=>{if(!k.includes('|'))delete st.sel[k];});
 const f1=x=>x==null?'':x.toFixed(1).replace('.',',');
 function teamLabel(t){const base=t.c.short;let n=t.name.replace(/\s+/g,' ');return n;}
-function rows(){return TEAMS.filter(t=>st.cat==='ALL'||t.cat===st.cat).map(t=>{const x=t.stt;return {t,c:t.c,citta:t.c.citta,club:t.name,km:km(t.c),min:mins(t.c),n:t.nClub,pos:x?x.pos/x.nz:null,pg:x?x.pg:null,gf:x&&x.pg?x.gf/x.pg:null,gs:x&&x.pg?x.gs/x.pg:null,dif:x&&x.pg?(x.gf-x.gs)/x.pg:null};}).filter(r=>r.km<=st.max||r.citta===st.org);}
+const DESC={n:1,gf:1,dif:1,pg:1};
+function rows(){return TEAMS.filter(t=>st.cat==='ALL'||t.cat===st.cat).map(t=>{const x=t.stt;return {t,c:t.c,citta:t.c.citta,club:t.name,km:km(t.c),min:mins(t.c),n:t.nClub,pos:x?x.pos/x.nz:null,pg:x?x.pg:null,gf:x&&x.pg?x.gf:null,gs:x&&x.pg?x.gs:null,dif:x&&x.pg?(x.gf-x.gs)/x.pg:null};}).filter(r=>r.km<=st.max||r.citta===st.org);}
 function statCells(t){const x=t.stt;if(!x)return '<td colspan="5" class="tm">nessuna classifica pubblicata</td>';
  return `<td class="n">${x.pos}° di ${x.nz} <span class="tm">${esc(x.z)}</span></td><td class="n">${x.pg}</td><td class="n">${x.gf}</td><td class="n">${x.gs}</td><td class="n">${x.pg?f1(x.gf/x.pg)+' – '+f1(x.gs/x.pg):'—'}</td>`;}
-function drawTable(){const R=rows();const s=st.sort;const nz=v=>v==null?Infinity:v;const desc={n:1,gf:1,dif:1,pg:1};R.sort((a,b)=>s==='citta'||s==='club'?String(a[s]).localeCompare(b[s])||a.km-b.km:(desc[s]?(nz(-b[s])-nz(-a[s])):(nz(a[s])-nz(b[s])))||a.km-b.km||a.club.localeCompare(b.club));
+function drawTable(){const R=rows();const s=st.sort;const dir=st.dir||(DESC[s]?-1:1);R.sort((a,b)=>{let va=a[s],vb=b[s];if(va==null&&vb==null)return a.km-b.km;if(va==null)return 1;if(vb==null)return -1;const c=(typeof va==='string'?va.localeCompare(vb):va-vb)*dir;return c||a.km-b.km||a.club.localeCompare(b.club);});
  let h='';R.forEach(r=>{const t=r.t,c=r.c,on=!!st.sel[t.key],org=c.citta===st.org;
   h+=`<tr class="${on?'chk':''} ${org?'org':''}"><td><input type="checkbox" data-k="${esc(t.key)}" ${on?'checked':''}></td>
   <td><b>${esc(c.citta)}</b> <span class="tm">(${c.prov})</span></td>
@@ -144,7 +146,7 @@ function drawTable(){const R=rows();const s=st.sort;const nz=v=>v==null?Infinity
   <td>${c.tel.split(' / ').map(x=>`<a href="tel:${x}">${x}</a>`).join('<br>')}</td>
   <td>${c.mail?`<a href="mailto:${c.mail}">${esc(c.mail)}</a>`:''}${c.web?`<br><a class="tm" href="${c.web}" target="_blank">sito</a>`:''}</td></tr>`;});
  document.getElementById('tb').innerHTML=h||'<tr><td colspan="13">Nessuna squadra entro la distanza scelta.</td></tr>';
- document.querySelectorAll('th[data-s]').forEach(th=>th.style.textDecoration=th.dataset.s===s?'underline':'');
+ document.querySelectorAll('th[data-s]').forEach(th=>{th.style.textDecoration=th.dataset.s===s?'underline':'';th.dataset.arrow=th.dataset.s===s?((st.dir||(DESC[s]?-1:1))<0?' ▼':' ▲'):'';});
  const sel=selected();document.getElementById('nsq').textContent=sel.length;document.getElementById('ncl').textContent=new Set(sel.map(t=>t.c.cod)).size;
  document.getElementById('maxv').textContent=st.max>=1000?'nessun limite':st.max+' km';}
 document.getElementById('tb').addEventListener('change',e=>{const cb=e.target.closest('input[data-k]');if(!cb)return;if(cb.checked)st.sel[cb.dataset.k]=1;else delete st.sel[cb.dataset.k];save();draw();});
@@ -162,7 +164,7 @@ document.getElementById('leg').innerHTML=`<h3>Legenda</h3><dl>
 <dt>Pos</dt><dd>posizione nel girone della categoria, con il numero di squadre del girone e la zona</dd>
 <dt>P</dt><dd>partite giocate</dd><dt>GF</dt><dd>gol fatti</dd><dt>GS</dt><dd>gol subiti</dd>
 <dt>MP</dt><dd>media a partita: gol fatti – gol subiti</dd></dl>
-<h3>Come si usa</h3>Clicca una città sulla mappa per calcolare le distanze da lì; avvicinando la mappa compaiono nomi e tempi di viaggio. Trascina la barra tra mappa e lista per cambiare le proporzioni. Trascina il bordo destro del titolo di una colonna per cambiarne la larghezza; doppio clic sul bordo per tornare alle larghezze iniziali. Clicca il titolo di una colonna per ordinare. Spunta le squadre da invitare: la selezione resta salvata in questo browser.`;
+<h3>Come si usa</h3>Clicca una città sulla mappa per calcolare le distanze da lì; avvicinando la mappa compaiono nomi e tempi di viaggio. Trascina la barra tra mappa e lista per cambiare le proporzioni. Trascina il bordo destro del titolo di una colonna per cambiarne la larghezza; doppio clic sul bordo per tornare alle larghezze iniziali. Clicca il titolo di una colonna per ordinare; clicca di nuovo per invertire l'ordine. GF e GS ordinano per totale, MP per differenza media a partita. Le squadre senza classifica vanno sempre in fondo. Spunta le squadre da invitare: la selezione resta salvata in questo browser.`;
 document.getElementById('src').innerHTML=`<h3>Fonti</h3>
 Squadre per categoria, stagione 2026/27, e loghi: <a href="https://www.hockeypista.fisr.it/" target="_blank">FISR Hockey Pista</a>, campionati giovanili U11–U19, consultato il __UPDATED__.<br>
 Classifica, partite, gol fatti e subiti: stessa fonte, sezione Classifiche di ogni campionato, aggiornate al __UPDATED__. I gironi sono a zone e a livelli diversi, e le squadre hanno giocato un numero diverso di partite: per confrontarle conviene la media a partita (gol fatti – gol subiti). Il campionato è appena iniziato e con 1–3 partite la media dice poco. I dati vengono riscaricati in automatico ogni notte.<br>
