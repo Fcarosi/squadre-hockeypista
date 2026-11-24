@@ -12,7 +12,11 @@ header{background:var(--ink);color:#fff;padding:12px 18px;display:flex;flex-wrap
 header h1{font-size:18px;margin:0 12px 0 0;font-weight:700}
 header label{font-size:13px;color:#b9c7d6;display:flex;align-items:center;gap:6px}
 header select,header input{font:inherit;padding:5px 8px;border-radius:5px;border:0}
-.sum{margin-left:auto;background:#fff;color:var(--ink);border-radius:6px;padding:6px 12px;font-weight:700}
+header{gap:10px 14px}
+#org{max-width:160px}#max{width:110px}
+header h1{display:flex;flex-direction:column;line-height:1.1}
+#upd{font-weight:400}
+.sum{white-space:nowrap;margin-left:auto;background:#fff;color:var(--ink);border-radius:6px;padding:6px 12px;font-weight:700}
 .sum span{color:var(--blue2)}
 html,body{height:100%}
 body{display:flex;flex-direction:column;overflow:hidden}
@@ -69,11 +73,11 @@ footer h3{font-size:13px;color:var(--ink);margin:0 0 4px}
 </style></head>
 <body>
 <header>
- <h1>Squadre da invitare</h1><span id="upd" style="font-size:12px;color:#b9c7d6">Dati FISR aggiornati il 24/11/2026</span>
+ <h1>Squadre da invitare<span id="upd" style="font-size:11px;color:#b9c7d6">Dati FISR aggiornati il 24/11/2026</span></h1>
  <label>Categoria <select id="cat"></select></label>
- <label>Città di partenza <select id="org"></select></label>
- <label>Distanza massima <input id="max" type="range" min="50" max="1000" step="25" value="1000"> <span id="maxv"></span></label>
- <div class="sum">Selezionate: <span id="nsq">0</span> squadre da <span id="ncl">0</span> club</div>
+ <label>Partenza <select id="org"></select></label>
+ <label>Distanza max <input id="max" type="range" min="50" max="1000" step="25" value="1000"> <span id="maxv" style="display:inline-block;min-width:88px"></span></label>
+ <div class="sum">Squadre selezionate: <span id="nsq">0</span></div>
 </header>
 <div class="split">
 <div id="map"></div>
@@ -147,7 +151,7 @@ function drawTable(){const R=rows();const s=st.sort;const dir=st.dir||(DESC[s]?-
   <td>${c.mail?`<a href="mailto:${c.mail}">${esc(c.mail)}</a>`:''}${c.web?`<br><a class="tm" href="${c.web}" target="_blank">sito</a>`:''}</td></tr>`;});
  document.getElementById('tb').innerHTML=h||'<tr><td colspan="13">Nessuna squadra entro la distanza scelta.</td></tr>';
  document.querySelectorAll('th[data-s]').forEach(th=>{th.style.textDecoration=th.dataset.s===s?'underline':'';th.dataset.arrow=th.dataset.s===s?((st.dir||(DESC[s]?-1:1))<0?' ▼':' ▲'):'';});
- const sel=selected();document.getElementById('nsq').textContent=sel.length;document.getElementById('ncl').textContent=new Set(sel.map(t=>t.c.cod)).size;
+ const sel=selected();document.getElementById('nsq').textContent=sel.length;
  document.getElementById('maxv').textContent=st.max>=1000?'nessun limite':st.max+' km';}
 document.getElementById('tb').addEventListener('change',e=>{const cb=e.target.closest('input[data-k]');if(!cb)return;if(cb.checked)st.sel[cb.dataset.k]=1;else delete st.sel[cb.dataset.k];save();draw();});
 function selected(){return TEAMS.filter(t=>st.sel[t.key]);}
